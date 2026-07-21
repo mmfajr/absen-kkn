@@ -327,26 +327,45 @@ export async function submitAttendanceRecord(record: {
 
   if (isSupabaseConfigured && supabase) {
     try {
+      // 1. Ensure member exists in Supabase members table to avoid foreign key error
+      const targetMember = INITIAL_MEMBERS.find((m) => m.id === record.member_id);
+      if (targetMember) {
+        await withTimeout(
+          supabase.from("members").upsert({
+            id: targetMember.id,
+            name: targetMember.name,
+            role: targetMember.role,
+          }),
+          2000
+        ).catch(() => {});
+      }
+
+      // 2. Insert attendance record
       const res = await withTimeout(
         supabase
           .from("attendance")
-          .insert({
-            member_id: record.member_id,
-            date: record.date,
-            time: record.time,
-            photo_url: record.photo_url,
-            hours: record.hours || 8,
-            has_geotag: record.has_geotag,
-            lat: record.lat,
-            lng: record.lng,
-            location_name: record.location_name || "Mentaos",
-          })
+          .upsert(
+            {
+              member_id: record.member_id,
+              date: record.date,
+              time: record.time,
+              photo_url: record.photo_url,
+              hours: record.hours || 8,
+              has_geotag: record.has_geotag,
+              lat: record.lat,
+              lng: record.lng,
+              location_name: record.location_name || "Mentaos",
+            },
+            { onConflict: "member_id,date" }
+          )
           .select()
           .single(),
-        3000
+        4000
       );
 
-      if (!res.error && res.data) {
+      if (res.error) {
+        console.warn("Supabase attendance insert error:", res.error);
+      } else if (res.data) {
         return res.data as Attendance;
       }
     } catch (e) {
