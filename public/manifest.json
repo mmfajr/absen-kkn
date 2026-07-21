@@ -1,0 +1,24 @@
+{
+  "name": "Absensi KKN Tematik Lingkungan Hidup 2026 Kelompok 10 Mentaos",
+  "short_name": "Absensi KKN 10",
+  "description": "Aplikasi Absensi KKN Tematik Lingkungan Hidup 2026 Kelompok 10 Mentaos",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAF8",
+  "theme_color": "#2E7D32",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
