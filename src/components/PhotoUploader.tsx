@@ -61,12 +61,11 @@ export function PhotoUploader({ onPhotoSelected }: PhotoUploaderProps) {
         </p>
       </div>
 
-      {/* Hidden File Input supporting direct camera capture on mobile */}
+      {/* File Input allowing gallery photo selection with EXIF geotags */}
       <input
         type="file"
         ref={fileInputRef}
         accept="image/*"
-        capture="environment"
         onChange={handleFileChange}
         className="hidden"
       />

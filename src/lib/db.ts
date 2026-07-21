@@ -6,24 +6,49 @@ const LOCAL_STORAGE_MEMBERS_KEY = "kkn10_mentaos_members_v1";
 const LOCAL_STORAGE_ATTENDANCE_KEY = "kkn10_mentaos_attendance_v1";
 
 /**
- * Gets today's date string in YYYY-MM-DD format using local time zone.
+ * Gets today's date string in YYYY-MM-DD format using WITA (Asia/Makassar, UTC+8) time zone.
  */
 export function getTodayDateString(): string {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  try {
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Makassar",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    return formatter.format(new Date());
+  } catch {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
 }
 
 /**
- * Gets current local time string in HH:mm format.
+ * Gets current local WITA time string in HH:mm format.
  */
 export function getCurrentTimeString(): string {
-  const d = new Date();
-  const hours = String(d.getHours()).padStart(2, "0");
-  const minutes = String(d.getMinutes()).padStart(2, "0");
-  return `${hours}:${minutes}`;
+  try {
+    const formatter = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Makassar",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    return formatter.format(new Date());
+  } catch {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  }
+}
+
+// Timeout helper for async promises (e.g. Supabase requests)
+function withTimeout<T>(promise: PromiseLike<T>, ms = 2000): Promise<T> {
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error("Supabase request timeout")), ms)
+    ),
+  ]);
 }
 
 // Local Storage Fallback helpers
@@ -35,7 +60,9 @@ function getLocalMembers(): Member[] {
     return INITIAL_MEMBERS as Member[];
   }
   try {
-    return JSON.parse(stored);
+    const parsed = JSON.parse(stored);
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    return INITIAL_MEMBERS as Member[];
   } catch {
     return INITIAL_MEMBERS as Member[];
   }
@@ -63,23 +90,31 @@ function saveLocalAttendance(records: Attendance[]) {
 export async function fetchMembers(): Promise<Member[]> {
   if (isSupabaseConfigured && supabase) {
     try {
-      const { data, error } = await supabase.from("members").select("*").order("name");
-      if (!error && data && data.length > 0) {
-        return data as Member[];
+      const res = await withTimeout(
+        supabase.from("members").select("*").order("name"),
+        2000
+      );
+      if (!res.error && res.data && res.data.length > 0) {
+        return res.data as Member[];
       }
-      // If table empty, seed Supabase with 16 members
-      if (data && data.length === 0) {
-        const { data: seeded, error: seedErr } = await supabase
-          .from("members")
-          .insert(INITIAL_MEMBERS)
-          .select();
-        if (!seedErr && seeded) return seeded as Member[];
+      if (!res.error && res.data && res.data.length === 0) {
+        const seeded = await withTimeout(
+          supabase.from("members").insert(INITIAL_MEMBERS).select(),
+          2000
+        );
+        if (!seeded.error && seeded.data && seeded.data.length > 0) {
+          return seeded.data as Member[];
+        }
       }
     } catch (e) {
-      console.warn("Supabase fetch members failed, falling back to local:", e);
+      console.warn("Supabase fetch members failed or timed out, falling back to local:", e);
     }
   }
-  return getLocalMembers();
+
+  const local = getLocalMembers();
+  if (local && local.length > 0) return local;
+
+  return INITIAL_MEMBERS as Member[];
 }
 
 export async function fetchMemberById(id: string): Promise<Member | null> {
@@ -90,11 +125,14 @@ export async function fetchMemberById(id: string): Promise<Member | null> {
 export async function updateMemberAvatar(memberId: string, avatarUrl: string): Promise<boolean> {
   if (isSupabaseConfigured && supabase) {
     try {
-      const { error } = await supabase
-        .from("members")
-        .update({ avatar_url: avatarUrl })
-        .eq("id", memberId);
-      if (!error) return true;
+      const res = await withTimeout(
+        supabase
+          .from("members")
+          .update({ avatar_url: avatarUrl })
+          .eq("id", memberId),
+        2000
+      );
+      if (!res.error) return true;
     } catch (e) {
       console.warn("Supabase avatar update failed:", e);
     }
@@ -116,12 +154,15 @@ export async function updateMemberAvatar(memberId: string, avatarUrl: string): P
 export async function fetchAttendanceForMember(memberId: string): Promise<Attendance[]> {
   if (isSupabaseConfigured && supabase) {
     try {
-      const { data, error } = await supabase
-        .from("attendance")
-        .select("*")
-        .eq("member_id", memberId)
-        .order("date", { ascending: false });
-      if (!error && data) return data as Attendance[];
+      const res = await withTimeout(
+        supabase
+          .from("attendance")
+          .select("*")
+          .eq("member_id", memberId)
+          .order("date", { ascending: false }),
+        2000
+      );
+      if (!res.error && res.data) return res.data as Attendance[];
     } catch (e) {
       console.warn("Supabase attendance fetch failed:", e);
     }
@@ -135,13 +176,16 @@ export async function fetchAttendanceForMember(memberId: string): Promise<Attend
 export async function fetchAttendanceForDate(memberId: string, dateStr: string): Promise<Attendance | null> {
   if (isSupabaseConfigured && supabase) {
     try {
-      const { data, error } = await supabase
-        .from("attendance")
-        .select("*")
-        .eq("member_id", memberId)
-        .eq("date", dateStr)
-        .single();
-      if (!error && data) return data as Attendance;
+      const res = await withTimeout(
+        supabase
+          .from("attendance")
+          .select("*")
+          .eq("member_id", memberId)
+          .eq("date", dateStr)
+          .single(),
+        2000
+      );
+      if (!res.error && res.data) return res.data as Attendance;
     } catch {
       // ignore single error if not found
     }
@@ -156,11 +200,14 @@ export async function updateAttendanceHours(
 ): Promise<boolean> {
   if (isSupabaseConfigured && supabase) {
     try {
-      const { error } = await supabase
-        .from("attendance")
-        .update({ hours })
-        .eq("id", attendanceId);
-      if (!error) return true;
+      const res = await withTimeout(
+        supabase
+          .from("attendance")
+          .update({ hours })
+          .eq("id", attendanceId),
+        2000
+      );
+      if (!res.error) return true;
     } catch (e) {
       console.warn("Supabase update hours failed:", e);
     }
@@ -184,8 +231,11 @@ export async function fetchAttendanceTodayForMember(memberId: string): Promise<A
 export async function fetchAllAttendance(): Promise<Attendance[]> {
   if (isSupabaseConfigured && supabase) {
     try {
-      const { data, error } = await supabase.from("attendance").select("*");
-      if (!error && data) return data as Attendance[];
+      const res = await withTimeout(
+        supabase.from("attendance").select("*"),
+        2000
+      );
+      if (!res.error && res.data) return res.data as Attendance[];
     } catch (e) {
       console.warn("Supabase fetch all attendance failed:", e);
     }
@@ -218,15 +268,18 @@ export async function uploadAttendancePhoto(file: File): Promise<string> {
   if (isSupabaseConfigured && supabase) {
     try {
       const fileName = `photos/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
-      const { error: uploadError } = await supabase.storage
-        .from("attendance-photos")
-        .upload(fileName, file, {
-          contentType: "image/jpeg",
-          cacheControl: "3600",
-          upsert: true,
-        });
+      const res = await withTimeout(
+        supabase.storage
+          .from("attendance-photos")
+          .upload(fileName, file, {
+            contentType: "image/jpeg",
+            cacheControl: "3600",
+            upsert: true,
+          }),
+        5000
+      );
 
-      if (!uploadError) {
+      if (!res.error) {
         const { data: urlData } = supabase.storage
           .from("attendance-photos")
           .getPublicUrl(fileName);
@@ -274,24 +327,27 @@ export async function submitAttendanceRecord(record: {
 
   if (isSupabaseConfigured && supabase) {
     try {
-      const { data, error } = await supabase
-        .from("attendance")
-        .insert({
-          member_id: record.member_id,
-          date: record.date,
-          time: record.time,
-          photo_url: record.photo_url,
-          hours: record.hours || 8,
-          has_geotag: record.has_geotag,
-          lat: record.lat,
-          lng: record.lng,
-          location_name: record.location_name || "Mentaos",
-        })
-        .select()
-        .single();
+      const res = await withTimeout(
+        supabase
+          .from("attendance")
+          .insert({
+            member_id: record.member_id,
+            date: record.date,
+            time: record.time,
+            photo_url: record.photo_url,
+            hours: record.hours || 8,
+            has_geotag: record.has_geotag,
+            lat: record.lat,
+            lng: record.lng,
+            location_name: record.location_name || "Mentaos",
+          })
+          .select()
+          .single(),
+        3000
+      );
 
-      if (!error && data) {
-        return data as Attendance;
+      if (!res.error && res.data) {
+        return res.data as Attendance;
       }
     } catch (e) {
       console.warn("Supabase submit failed, saving locally:", e);

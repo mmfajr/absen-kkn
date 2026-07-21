@@ -36,29 +36,13 @@ function AttendanceFormContent({ memberId }: { memberId: string }) {
   const { showToast } = useAppStore();
 
   const queryDate = searchParams.get("date");
+  const todayStr = getTodayDateString();
+  const targetDateStr = queryDate || todayStr;
 
   const [member, setMember] = useState<Member | null>(null);
   const [existingAttendance, setExistingAttendance] = useState<Attendance | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Allowed dates for attendance (13 Juli 2026 - 21 Juli 2026)
-  const allowedDates = [
-    { value: "2026-07-13", label: "Senin, 13 Juli 2026" },
-    { value: "2026-07-14", label: "Selasa, 14 Juli 2026" },
-    { value: "2026-07-15", label: "Rabu, 15 Juli 2026" },
-    { value: "2026-07-16", label: "Kamis, 16 Juli 2026" },
-    { value: "2026-07-17", label: "Jumat, 17 Juli 2026" },
-    { value: "2026-07-18", label: "Sabtu, 18 Juli 2026" },
-    { value: "2026-07-19", label: "Minggu, 19 Juli 2026" },
-    { value: "2026-07-20", label: "Senin, 20 Juli 2026" },
-    { value: "2026-07-21", label: "Selasa, 21 Juli 2026 (Hari Ini)" },
-  ];
-
-  const defaultDate = queryDate && allowedDates.some((d) => d.value === queryDate)
-    ? queryDate
-    : getTodayDateString();
-
-  const [selectedDate, setSelectedDate] = useState<string>(defaultDate);
   const [currentTime, setCurrentTime] = useState<string>("");
   const [photoData, setPhotoData] = useState<{
     compressedFile: File;
@@ -77,30 +61,21 @@ function AttendanceFormContent({ memberId }: { memberId: string }) {
       const m = await fetchMemberById(memberId);
       if (m) {
         setMember(m);
-        const log = await fetchAttendanceForDate(memberId, selectedDate);
+        const log = await fetchAttendanceForDate(memberId, targetDateStr);
         setExistingAttendance(log);
       }
       setIsLoading(false);
     }
 
     loadData();
-  }, [memberId, selectedDate]);
-
-  // Handle Date Dropdown change
-  const handleDateChange = async (newDate: string) => {
-    setSelectedDate(newDate);
-    setIsLoading(true);
-    const log = await fetchAttendanceForDate(memberId, newDate);
-    setExistingAttendance(log);
-    setIsLoading(false);
-  };
+  }, [memberId, targetDateStr]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!member) return;
 
     if (!photoData) {
-      showToast("Silakan ambil atau unggah foto absensi terlebih dahulu", "error");
+      showToast("Silakan pilih foto absensi terlebih dahulu", "error");
       return;
     }
 
@@ -112,10 +87,10 @@ function AttendanceFormContent({ memberId }: { memberId: string }) {
       // 2. Submit attendance record
       const record = await submitAttendanceRecord({
         member_id: member.id,
-        date: selectedDate,
+        date: targetDateStr,
         time: currentTime || getCurrentTimeString(),
         photo_url: photoUrl,
-        hours: 8, // Default 8 hours, can be customized in calendar detail modal
+        hours: 8, // Default 8 hours, editable in calendar detail modal
         has_geotag: photoData.geotag.hasGeotag,
         lat: photoData.geotag.lat,
         lng: photoData.geotag.lng,
@@ -159,9 +134,20 @@ function AttendanceFormContent({ memberId }: { memberId: string }) {
     );
   }
 
-  const isToday = selectedDate === getTodayDateString();
-  const selectedDateLabel =
-    allowedDates.find((d) => d.value === selectedDate)?.label || selectedDate;
+  const isToday = targetDateStr === todayStr;
+
+  // Format Date (e.g. "Rabu, 15 Juli 2026")
+  const dateParts = targetDateStr.split("-").map(Number);
+  const formattedDateLabel = new Date(
+    dateParts[0],
+    dateParts[1] - 1,
+    dateParts[2]
+  ).toLocaleDateString("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <div className="space-y-5">
@@ -183,7 +169,7 @@ function AttendanceFormContent({ memberId }: { memberId: string }) {
           }`}
         >
           {!isToday && <History className="w-3.5 h-3.5 text-amber-700" />}
-          {isToday ? "Absensi Hari Ini" : "Absensi Susulan (13-21 Juli)"}
+          {isToday ? "Absensi Hari Ini" : `Absensi Susulan (${targetDateStr.slice(-2)} Juli)`}
         </span>
       </div>
 
@@ -214,7 +200,7 @@ function AttendanceFormContent({ memberId }: { memberId: string }) {
               Absensi Berhasil Disimpan!
             </h3>
             <p className="text-sm text-emerald-900 font-medium mt-1">
-              Absensi untuk <strong className="font-bold">{selectedDateLabel}</strong> telah dicatat.
+              Absensi untuk <strong className="font-bold">{formattedDateLabel}</strong> telah dicatat.
             </p>
           </div>
 
@@ -236,7 +222,7 @@ function AttendanceFormContent({ memberId }: { memberId: string }) {
           </div>
         </motion.div>
       ) : existingAttendance ? (
-        /* CASE B: Attendance already submitted for selected date */
+        /* CASE B: Attendance already submitted for this date */
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -251,7 +237,7 @@ function AttendanceFormContent({ memberId }: { memberId: string }) {
               Anda sudah melakukan absensi pada tanggal ini.
             </h3>
             <p className="text-xs text-emerald-800 mt-1 font-semibold">
-              {selectedDateLabel} — Pukul {existingAttendance.time} WITA
+              {formattedDateLabel} — Pukul {existingAttendance.time} WITA
             </p>
           </div>
 
@@ -279,28 +265,15 @@ function AttendanceFormContent({ memberId }: { memberId: string }) {
       ) : (
         /* CASE C: Submission Form */
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Date & Time Picker Container */}
+          {/* Date & Time Container */}
           <div className="glass-card rounded-3xl p-5 space-y-4">
-            {/* Date Selection Dropdown */}
-            <div className="space-y-1.5 pb-3 border-b border-emerald-900/10">
+            {/* Date Display */}
+            <div className="flex items-center justify-between pb-3 border-b border-emerald-900/10">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-[#2E7D32]" />
-                <label className="text-xs font-bold text-gray-500 uppercase">
-                  Pilih Tanggal Absensi
-                </label>
+                <span className="text-xs font-bold text-gray-500 uppercase">Tanggal Absensi</span>
               </div>
-
-              <select
-                value={selectedDate}
-                onChange={(e) => handleDateChange(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-2xl bg-white border border-emerald-900/20 text-sm font-extrabold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2E7D32]/40"
-              >
-                {allowedDates.map((d) => (
-                  <option key={d.value} value={d.value}>
-                    {d.label}
-                  </option>
-                ))}
-              </select>
+              <span className="text-sm font-extrabold text-gray-900">{formattedDateLabel}</span>
             </div>
 
             {/* Time Picker */}
@@ -351,7 +324,7 @@ function AttendanceFormContent({ memberId }: { memberId: string }) {
             ) : (
               <>
                 <Send className="w-5 h-5" />
-                <span>Simpan Absensi</span>
+                <span>Simpan Absensi ({targetDateStr.slice(-2)} Juli)</span>
               </>
             )}
           </motion.button>

@@ -139,7 +139,6 @@ export default function MemberDetailPage({
         type="file"
         ref={fileInputRef}
         accept="image/*"
-        capture="environment"
         onChange={handleAvatarChange}
         className="hidden"
       />

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { MemberStats } from "@/types";
 import { fetchMembersWithStats } from "./db";
+import { INITIAL_MEMBERS } from "./initialMembers";
 
 interface AppState {
   members: MemberStats[];
@@ -44,10 +45,26 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isLoading: true });
     try {
       const data = await fetchMembersWithStats();
-      set({ members: data, isLoading: false });
+      if (data && data.length > 0) {
+        set({ members: data, isLoading: false });
+      } else {
+        const fallback = INITIAL_MEMBERS.map((m) => ({
+          ...m,
+          attendedToday: false,
+          totalDays: 0,
+          totalHours: 0,
+        }));
+        set({ members: fallback as MemberStats[], isLoading: false });
+      }
     } catch (err) {
       console.error("Failed to load members:", err);
-      set({ isLoading: false });
+      const fallback = INITIAL_MEMBERS.map((m) => ({
+        ...m,
+        attendedToday: false,
+        totalDays: 0,
+        totalHours: 0,
+      }));
+      set({ members: fallback as MemberStats[], isLoading: false });
     }
   },
 }));
