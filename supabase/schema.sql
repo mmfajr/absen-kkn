@@ -39,13 +39,16 @@ ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow public read members" ON members FOR SELECT USING (true);
 CREATE POLICY "Allow public insert members" ON members FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update members" ON members FOR UPDATE USING (true);
 
 CREATE POLICY "Allow public read attendance" ON attendance FOR SELECT USING (true);
 CREATE POLICY "Allow public insert attendance" ON attendance FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update attendance" ON attendance FOR UPDATE USING (true);
 
 -- Storage bucket policies
 CREATE POLICY "Public Read Storage" ON storage.objects FOR SELECT USING (bucket_id = 'attendance-photos');
 CREATE POLICY "Public Insert Storage" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'attendance-photos');
+CREATE POLICY "Public Update Storage" ON storage.objects FOR UPDATE USING (bucket_id = 'attendance-photos');
 
 -- 5. Seed Members Initial Data (16 Members)
 INSERT INTO members (id, name, role) VALUES
