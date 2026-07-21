@@ -37,15 +37,24 @@ ON CONFLICT (id) DO NOTHING;
 ALTER TABLE members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Allow public read members" ON members;
+DROP POLICY IF EXISTS "Allow public insert members" ON members;
+DROP POLICY IF EXISTS "Allow public update members" ON members;
 CREATE POLICY "Allow public read members" ON members FOR SELECT USING (true);
 CREATE POLICY "Allow public insert members" ON members FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public update members" ON members FOR UPDATE USING (true);
 
+DROP POLICY IF EXISTS "Allow public read attendance" ON attendance;
+DROP POLICY IF EXISTS "Allow public insert attendance" ON attendance;
+DROP POLICY IF EXISTS "Allow public update attendance" ON attendance;
 CREATE POLICY "Allow public read attendance" ON attendance FOR SELECT USING (true);
 CREATE POLICY "Allow public insert attendance" ON attendance FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public update attendance" ON attendance FOR UPDATE USING (true);
 
 -- Storage bucket policies
+DROP POLICY IF EXISTS "Public Read Storage" ON storage.objects;
+DROP POLICY IF EXISTS "Public Insert Storage" ON storage.objects;
+DROP POLICY IF EXISTS "Public Update Storage" ON storage.objects;
 CREATE POLICY "Public Read Storage" ON storage.objects FOR SELECT USING (bucket_id = 'attendance-photos');
 CREATE POLICY "Public Insert Storage" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'attendance-photos');
 CREATE POLICY "Public Update Storage" ON storage.objects FOR UPDATE USING (bucket_id = 'attendance-photos');
