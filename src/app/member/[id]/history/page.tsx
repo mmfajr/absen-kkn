@@ -86,8 +86,17 @@ export default function AttendanceHistoryPage({
         {/* Member Title Banner */}
         <div className="glass-card rounded-2xl p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#2E7D32] text-white font-bold text-sm flex items-center justify-center shrink-0">
-              {member.name.charAt(0)}
+            <div className="w-10 h-10 rounded-2xl bg-[#2E7D32] text-white font-bold text-sm flex items-center justify-center shrink-0 overflow-hidden">
+              {member.avatar_url ? (
+                /* eslint-disable-next-ok-line @next/next/no-img-element */
+                <img
+                  src={member.avatar_url}
+                  alt={member.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                member.name.charAt(0)
+              )}
             </div>
             <div>
               <h2 className="text-base font-extrabold text-gray-900">{member.name}</h2>

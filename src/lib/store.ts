@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { MemberStats } from "@/types";
-import { fetchMembersWithStats } from "./db";
+import { fetchMembersWithStats, sortMembersByRoleAndName } from "./db";
 import { INITIAL_MEMBERS } from "./initialMembers";
 
 interface AppState {
@@ -46,24 +46,28 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const data = await fetchMembersWithStats();
       if (data && data.length > 0) {
-        set({ members: data, isLoading: false });
+        set({ members: sortMembersByRoleAndName(data), isLoading: false });
       } else {
-        const fallback = INITIAL_MEMBERS.map((m) => ({
-          ...m,
-          attendedToday: false,
-          totalDays: 0,
-          totalHours: 0,
-        }));
+        const fallback = sortMembersByRoleAndName(
+          INITIAL_MEMBERS.map((m) => ({
+            ...m,
+            attendedToday: false,
+            totalDays: 0,
+            totalHours: 0,
+          }))
+        );
         set({ members: fallback as MemberStats[], isLoading: false });
       }
     } catch (err) {
       console.error("Failed to load members:", err);
-      const fallback = INITIAL_MEMBERS.map((m) => ({
-        ...m,
-        attendedToday: false,
-        totalDays: 0,
-        totalHours: 0,
-      }));
+      const fallback = sortMembersByRoleAndName(
+        INITIAL_MEMBERS.map((m) => ({
+          ...m,
+          attendedToday: false,
+          totalDays: 0,
+          totalHours: 0,
+        }))
+      );
       set({ members: fallback as MemberStats[], isLoading: false });
     }
   },

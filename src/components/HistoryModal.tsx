@@ -114,27 +114,6 @@ export function HistoryModal({ attendance, onClose, onUpdated }: HistoryModalPro
               alt="Foto Absensi"
               className="w-full h-full object-cover"
             />
-
-            {/* GPS Tag Badge on top of image */}
-            <div className="absolute bottom-2 left-2 right-2">
-              <div
-                className={`px-3 py-1.5 rounded-xl backdrop-blur-md text-[11px] font-semibold flex items-center gap-1.5 text-white ${
-                  attendance.has_geotag ? "bg-emerald-900/80" : "bg-amber-900/80"
-                }`}
-              >
-                {attendance.has_geotag ? (
-                  <>
-                    <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="truncate">GPS Verified ({attendance.location_name || "Mentaos"})</span>
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Tanpa Metadata GPS</span>
-                  </>
-                )}
-              </div>
-            </div>
           </div>
 
           {/* Information Details */}

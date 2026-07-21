@@ -85,17 +85,42 @@ function saveLocalAttendance(records: Attendance[]) {
   }
 }
 
+const ROLE_ORDER: Record<string, number> = {
+  "Ketua": 1,
+  "Ketuplak": 1,
+  "Sekretaris": 2,
+  "Sekre": 2,
+  "Bendahara": 3,
+  "Koordinator Acara": 4,
+  "Acara": 5,
+  "Koordinator Media": 6,
+  "Media": 7,
+  "Koordinator Humas & Perkap": 8,
+  "Humas & Perkap": 9,
+};
+
+export function sortMembersByRoleAndName<T extends { role: string; name: string }>(members: T[]): T[] {
+  return [...members].sort((a, b) => {
+    const rankA = ROLE_ORDER[a.role] ?? 99;
+    const rankB = ROLE_ORDER[b.role] ?? 99;
+    if (rankA !== rankB) {
+      return rankA - rankB;
+    }
+    return a.name.localeCompare(b.name, "id");
+  });
+}
+
 // --- PUBLIC DB API ---
 
 export async function fetchMembers(): Promise<Member[]> {
   if (isSupabaseConfigured && supabase) {
     try {
       const res = await withTimeout(
-        supabase.from("members").select("*").order("name"),
+        supabase.from("members").select("*"),
         2000
       );
       if (!res.error && res.data && res.data.length > 0) {
-        return res.data as Member[];
+        return sortMembersByRoleAndName(res.data as Member[]);
       }
       if (!res.error && res.data && res.data.length === 0) {
         const seeded = await withTimeout(
@@ -103,7 +128,7 @@ export async function fetchMembers(): Promise<Member[]> {
           2000
         );
         if (!seeded.error && seeded.data && seeded.data.length > 0) {
-          return seeded.data as Member[];
+          return sortMembersByRoleAndName(seeded.data as Member[]);
         }
       }
     } catch (e) {
@@ -112,9 +137,9 @@ export async function fetchMembers(): Promise<Member[]> {
   }
 
   const local = getLocalMembers();
-  if (local && local.length > 0) return local;
+  if (local && local.length > 0) return sortMembersByRoleAndName(local);
 
-  return INITIAL_MEMBERS as Member[];
+  return sortMembersByRoleAndName(INITIAL_MEMBERS as Member[]);
 }
 
 export async function fetchMemberById(id: string): Promise<Member | null> {
