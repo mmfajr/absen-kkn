@@ -54,7 +54,7 @@ export default function PanduanPage() {
                 2
               </div>
               <p>
-                Ketuk tombol <strong>✅ Attendance Today</strong>. Jam absensi akan otomatis terisi waktu lokal terkini.
+                Ketuk tombol <strong>Attendance Today</strong>. Jam absensi akan otomatis terisi waktu lokal terkini.
               </p>
             </div>
 

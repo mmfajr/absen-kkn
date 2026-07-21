@@ -273,7 +273,7 @@ export default function MemberDetailPage({
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#2E7D32] to-[#4CAF50] text-white font-extrabold text-base shadow-lg shadow-emerald-900/15 flex items-center justify-center gap-2.5 transition"
             >
               <CheckCircle2 className="w-6 h-6 stroke-[2.5]" />
-              <span>✅ Attendance Today</span>
+              <span>Attendance Today</span>
             </motion.button>
           </Link>
 
@@ -283,7 +283,7 @@ export default function MemberDetailPage({
               className="w-full py-4 rounded-2xl bg-white hover:bg-emerald-50 border-2 border-emerald-600/30 text-emerald-950 font-extrabold text-base shadow-sm flex items-center justify-center gap-2.5 transition"
             >
               <Calendar className="w-6 h-6 text-[#2E7D32]" />
-              <span>📅 Attendance History</span>
+              <span>Attendance History</span>
             </motion.button>
           </Link>
         </div>
