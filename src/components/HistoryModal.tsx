@@ -26,13 +26,13 @@ interface HistoryModalProps {
 
 export function HistoryModal({ attendance, onClose, onUpdated }: HistoryModalProps) {
   const { showToast } = useAppStore();
-  const [hoursVal, setHoursVal] = useState<number>(8);
+  const [hoursInput, setHoursInput] = useState<string>("8");
   const [isEditingHours, setIsEditingHours] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (attendance) {
-      setHoursVal(attendance.hours || 8);
+      setHoursInput(String(attendance.hours || 8));
       setIsEditingHours(false);
     }
   }, [attendance]);
@@ -49,10 +49,13 @@ export function HistoryModal({ attendance, onClose, onUpdated }: HistoryModalPro
 
   const handleSaveHours = async () => {
     setIsSaving(true);
+    const parsed = parseFloat(hoursInput);
+    const validHours = isNaN(parsed) ? 8 : parsed;
+
     try {
-      const success = await updateAttendanceHours(attendance.id, Number(hoursVal) || 8);
+      const success = await updateAttendanceHours(attendance.id, validHours);
       if (success) {
-        attendance.hours = Number(hoursVal) || 8;
+        attendance.hours = validHours;
         showToast("Jam kerja berhasil diperbarui!", "success");
         setIsEditingHours(false);
         if (onUpdated) onUpdated();
@@ -190,11 +193,13 @@ export function HistoryModal({ attendance, onClose, onUpdated }: HistoryModalPro
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
-                      min={1}
+                      min={0}
                       max={24}
-                      value={hoursVal}
-                      onChange={(e) => setHoursVal(Number(e.target.value))}
-                      className="w-20 px-3 py-1.5 rounded-xl bg-white border border-emerald-900/30 text-sm font-extrabold text-gray-900 text-center"
+                      step={0.5}
+                      value={hoursInput}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => setHoursInput(e.target.value)}
+                      className="w-20 px-3 py-1.5 rounded-xl bg-white border border-emerald-900/30 text-sm font-extrabold text-gray-900 text-center focus:ring-2 focus:ring-[#2E7D32]"
                     />
                     <span className="text-xs font-bold text-gray-700">Jam Kerja</span>
                   </div>
@@ -205,9 +210,9 @@ export function HistoryModal({ attendance, onClose, onUpdated }: HistoryModalPro
                       <button
                         key={h}
                         type="button"
-                        onClick={() => setHoursVal(h)}
+                        onClick={() => setHoursInput(String(h))}
                         className={`px-2.5 py-1 rounded-full text-xs font-bold transition ${
-                          hoursVal === h
+                          hoursInput === String(h)
                             ? "bg-[#2E7D32] text-white"
                             : "bg-white text-emerald-900 border border-emerald-200"
                         }`}
