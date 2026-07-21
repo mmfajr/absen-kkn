@@ -42,7 +42,7 @@ export function getCurrentTimeString(): string {
 }
 
 // Timeout helper for async promises (e.g. Supabase requests)
-function withTimeout<T>(promise: PromiseLike<T>, ms = 2000): Promise<T> {
+function withTimeout<T>(promise: PromiseLike<T>, ms = 6000): Promise<T> {
   return Promise.race([
     Promise.resolve(promise),
     new Promise<T>((_, reject) =>
