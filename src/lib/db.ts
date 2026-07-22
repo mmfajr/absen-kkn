@@ -248,6 +248,35 @@ export async function updateAttendanceHours(
   return false;
 }
 
+export async function updateAttendanceTime(
+  attendanceId: string,
+  time: string
+): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const res = await withTimeout(
+        supabase
+          .from("attendance")
+          .update({ time })
+          .eq("id", attendanceId),
+        2000
+      );
+      if (!res.error) return true;
+    } catch (e) {
+      console.warn("Supabase update time failed:", e);
+    }
+  }
+
+  const all = getLocalAttendance();
+  const target = all.find((a) => a.id === attendanceId);
+  if (target) {
+    target.time = time;
+    saveLocalAttendance(all);
+    return true;
+  }
+  return false;
+}
+
 export async function fetchAttendanceTodayForMember(memberId: string): Promise<Attendance | null> {
   const today = getTodayDateString();
   return fetchAttendanceForDate(memberId, today);

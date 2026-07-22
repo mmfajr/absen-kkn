@@ -68,8 +68,8 @@ export async function extractGeotagFromImage(file: File): Promise<GeotagResult> 
  */
 export async function compressImage(
   file: File,
-  maxWidth = 800,
-  quality = 0.65
+  maxWidth = 1600,
+  quality = 0.85
 ): Promise<{ dataUrl: string; file: File }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
