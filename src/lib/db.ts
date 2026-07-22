@@ -356,11 +356,14 @@ export async function submitAttendanceRecord(record: {
       const targetMember = INITIAL_MEMBERS.find((m) => m.id === record.member_id);
       if (targetMember) {
         await withTimeout(
-          supabase.from("members").upsert({
-            id: targetMember.id,
-            name: targetMember.name,
-            role: targetMember.role,
-          }),
+          supabase.from("members").upsert(
+            {
+              id: targetMember.id,
+              name: targetMember.name,
+              role: targetMember.role,
+            },
+            { ignoreDuplicates: true }
+          ),
           2000
         ).catch(() => {});
       }

@@ -224,8 +224,24 @@ export default function RekapPage() {
                 className="glass-card rounded-2xl p-3.5 flex items-center justify-between hover:border-emerald-500/30 transition"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-900 font-bold text-xs flex items-center justify-center shrink-0">
-                    {row.member.name.charAt(0)}
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-200 text-emerald-900 font-bold text-xs flex items-center justify-center border border-emerald-300/40 shadow-inner overflow-hidden shrink-0">
+                    {row.member.avatar_url ? (
+                      // eslint-disable-next-ok-line @next/next/no-img-element
+                      <img
+                        src={row.member.avatar_url}
+                        alt={row.member.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span>
+                        {row.member.name
+                          .split(" ")
+                          .slice(0, 2)
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()}
+                      </span>
+                    )}
                   </div>
 
                   <div className="min-w-0">

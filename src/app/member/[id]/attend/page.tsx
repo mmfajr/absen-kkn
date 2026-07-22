@@ -175,8 +175,24 @@ function AttendanceFormContent({ memberId }: { memberId: string }) {
 
       {/* Member Title Banner */}
       <div className="glass-card rounded-2xl p-4 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-[#2E7D32] text-white font-bold text-sm flex items-center justify-center shrink-0">
-          {member.name.charAt(0)}
+        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-200 text-emerald-900 font-bold text-xs flex items-center justify-center border border-emerald-300/40 shadow-inner overflow-hidden shrink-0">
+          {member.avatar_url ? (
+            // eslint-disable-next-ok-line @next/next/no-img-element
+            <img
+              src={member.avatar_url}
+              alt={member.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span>
+              {member.name
+                .split(" ")
+                .slice(0, 2)
+                .map((n) => n[0])
+                .join("")
+                .toUpperCase()}
+            </span>
+          )}
         </div>
         <div>
           <h2 className="text-base font-extrabold text-gray-900">{member.name}</h2>
